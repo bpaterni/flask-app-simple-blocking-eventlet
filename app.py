@@ -70,8 +70,8 @@ def api_busy_mssql(*args, **kwargs):
     sess_mssql = db_sessionmaker_mssql()
     recs = sess_mssql.execute("""
         WITH x AS (SELECT n FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) v(n))
-        SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthous.n n
-        FROM x ones,     x tens,      x hundreds,       x thousands, x tenthous
+        SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthous.n + 100000*hunthous.n + 1000000*mil.n n
+        FROM x ones,     x tens,      x hundreds,       x thousands, x tenthous, x hunthous, x mil
         ORDER BY 1""")
     print(', '.join(str(x[0]) for x in recs.fetchall()[:10]))
     print('post busy mssql')
