@@ -81,7 +81,7 @@ def api_busy_mssql(*args, **kwargs):
 def api_busy_postgresql(*args, **kwargs):
     print('pre busy postgresql')
     sess_psql = db_sessionmaker_postgresql()
-    recs = sess_psql.execute("""SELECT * FROM generate_series(1,50000)""")
+    recs = sess_psql.execute("""SELECT * FROM generate_series(1,10000000)""")
     print(', '.join(str(x[0]) for x in recs.fetchall()[:10]))
     print('post busy postgresql')
     return 'busy-postgresql: done\n'
