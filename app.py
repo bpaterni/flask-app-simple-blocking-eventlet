@@ -62,8 +62,8 @@ def api_busy_oracle(*args, **kwargs):
     sess_oracle = db_sessionmaker_oracle()
     recs = sess_oracle.execute("""
         with x as (select rownum-1 r from dual connect by rownum <= 10)
-        select ones.r + 10*tens.r + 100*hundreds.r + 1000*thousands.r n
-        from x ones, x tens, x hundreds, x thousands
+        select ones.r + 10*tens.r + 100*hundreds.r + 1000*thousands.r + 10000*tenthous.r + 100000*hunthous.r n
+        from x ones, x tens, x hundreds, x thousands, x tenthous, x hunthous
         order by 1""")
     print(', '.join(str(x[0]) for x in recs.fetchall()[:10]))
     print('post busy oracle')
