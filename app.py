@@ -7,6 +7,8 @@ if os.environ.get('ENABLE_MONKEY_PATCH_ALL', None):
     eventlet.monkey_patch()
     print('monkey patched!')
 
+import cx_Oracle
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -21,7 +23,10 @@ db_engine_oracle = create_engine("""oracle+cx_oracle://{}:{}@(DESCRIPTION=(ADDRE
                 urllib.parse.quote_plus(os.environ['ORACLE_PASS']),
                 urllib.parse.quote_plus(os.environ['ORACLE_HOST']),
                 urllib.parse.quote_plus(os.environ['ORACLE_PORT']),
-                urllib.parse.quote_plus(os.environ['ORACLE_SERVICE_NAME'])))
+                urllib.parse.quote_plus(os.environ['ORACLE_SERVICE_NAME'])),
+                connect_args={
+                    'mode': cx_Oracle.SYSDBA,
+                    })
 conn_str_mssql = 'DRIVER={{{}}};SERVER={};DATABASE={};UID={};PWD={}'.format(
     os.environ['MSSQL_DRIVER'],
     os.environ['MSSQL_HOST'],
