@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker run -d -it --name oracledb -P store/oracle/database-enterprise:12.2.0.1
