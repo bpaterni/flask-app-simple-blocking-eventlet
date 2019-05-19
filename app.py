@@ -5,6 +5,7 @@ if os.environ.get('ENABLE_MONKEY_PATCH_ALL', None):
     eventlet.monkey_patch()
     print('monkey patched!')
 
+import inspect
 import itertools
 import urllib
 import time
@@ -46,20 +47,60 @@ if os.environ.get('ENABLE_DEBUG', None):
     import pdb
     pdb.set_trace()
 
-class ConnectionPoolWithoutTime(eventlet.db_pool.ConnectionPool):
+class ConnectionPoolWrappedDefaultCons(eventlet.db_pool.ConnectionPool):
+    def __init__(self, db_module, *args, **kwargs):
+        super_pos_defaults = {
+                k: v.default
+                for k,v
+                in
+                inspect.signature(
+                    super(
+                        ConnectionPoolWrappedDefaultCons,
+                        self,
+                        ).__init__).\
+                                parameters.\
+                                items()
+                if (
+                    v.kind in (
+                        inspect.Parameter.POSITIONAL_ONLY,
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        )
+                    and v.default is not inspect.Parameter.empty
+                    )
+                }
+        min_size = kwargs.pop('min_size',
+                super_pos_defaults.get('min_size', 0))
+        max_size = kwargs.pop('max_size',
+                super_pos_defaults.get('max_size', 4))
+        max_idle = kwargs.pop('max_idle',
+                super_pos_defaults.get('max_idle', 10))
+        max_age = kwargs.pop('max_age',
+                super_pos_defaults.get('max_age', 30))
+        connect_timeout = kwargs.pop('connect_timeout',
+                super_pos_defaults.get('connect_timeout', 5))
+        cleanup = kwargs.pop('cleanup',
+                super_pos_defaults.get('cleanup',
+                    eventlet.db_pool.cleanup_rollback))
+
+        super(ConnectionPoolWrappedDefaultCons, self).__init__(
+                db_module,
+                min_size,
+                max_size,
+                max_idle,
+                max_age,
+                connect_timeout,
+                cleanup,
+                *args,
+                **kwargs
+                )
+
+class ConnectionPoolWithoutTime(ConnectionPoolWrappedDefaultCons):
     def create(self):
         return super(ConnectionPoolWithoutTime, self).create()[2]
 
 #mssql_creator = eventlet.db_pool.ConnectionPool(
 mssql_creator = ConnectionPoolWithoutTime(
         pyodbc,
-        0, 4, 10, 30, 5, eventlet.db_pool.cleanup_rollback, # default
-        #0, 99, 200, 30, 5,
-        #eventlet.db_pool.cleanup_rollback,
-        #min_size=0, max_size=4,
-        #max_idle=10, max_age=30,
-        #connect_timeout=5,
-        #cleanup=eventlet.db_pool.cleanup_rollback,
         'DRIVER={{{}}};SERVER={};DATABASE={};UID={};PWD={{{}}}'.format(
             os.environ['MSSQL_DRIVER'],
             os.environ['MSSQL_HOST'],
