@@ -26,24 +26,6 @@ from toolz.curried import concat
 app       = Flask(__name__)
 socketio  = SocketIO(app)
 
-db_engine_oracle = create_engine("""oracle+cx_oracle://{}:{}@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST={})(PORT={})))(CONNECT_DATA=(SERVICE_NAME={})(SERVER=DEDICATED)))""".format(
-                urllib.parse.quote_plus(os.environ['ORACLE_USER']),
-                urllib.parse.quote_plus(os.environ['ORACLE_PASS']),
-                urllib.parse.quote_plus(os.environ['ORACLE_HOST']),
-                urllib.parse.quote_plus(os.environ['ORACLE_PORT']),
-                urllib.parse.quote_plus(os.environ['ORACLE_SERVICE_NAME'])),
-                connect_args={
-                    'mode': cx_Oracle.SYSDBA,
-                    },
-                )
-conn_str_mssql = 'DRIVER={{{}}};SERVER={};DATABASE={};UID={};PWD={}'.format(
-    os.environ['MSSQL_DRIVER'],
-    os.environ['MSSQL_HOST'],
-    os.environ['MSSQL_CATALOG'],
-    os.environ['MSSQL_USER'],
-    os.environ['MSSQL_PASS'])
-cstr = 'mssql+pyodbc:///?odbc_connect={}'.format(urllib.parse.quote_plus(conn_str_mssql))
-
 if os.environ.get('ENABLE_DEBUG', None):
     import pdb
     pdb.set_trace()
@@ -99,7 +81,33 @@ class ConnectionPoolWithoutTime(ConnectionPoolWrappedDefaultCons):
     def create(self):
         return super(ConnectionPoolWithoutTime, self).create()[2]
 
-#mssql_creator = eventlet.db_pool.ConnectionPool(
+creator_oracle = ConnectionPoolWithoutTime(
+        cx_Oracle,
+        os.environ['ORACLE_USER'],
+        os.environ['ORACLE_PASS'],
+        '{}/{}'.format(
+            os.environ['ORACLE_HOST'],
+            os.environ['ORACLE_SID'],
+            ),
+        mode=cx_Oracle.SYSDBA)
+
+cstr_oracle = 'oracle+cx_oracle://{}:{}@(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST={})(PORT={})))(CONNECT_DATA=(SERVICE_NAME={})(SERVER=DEDICATED)))'.format(
+        urllib.parse.quote_plus(os.environ['ORACLE_USER']),
+        urllib.parse.quote_plus(os.environ['ORACLE_PASS']),
+        urllib.parse.quote_plus(os.environ['ORACLE_HOST']),
+        urllib.parse.quote_plus(os.environ['ORACLE_PORT']),
+        urllib.parse.quote_plus(os.environ['ORACLE_SERVICE_NAME']),
+        )
+
+db_engine_oracle = create_engine(cstr_oracle, **{'creator': creator_oracle.create})
+conn_str_mssql = 'DRIVER={{{}}};SERVER={};DATABASE={};UID={};PWD={}'.format(
+    os.environ['MSSQL_DRIVER'],
+    os.environ['MSSQL_HOST'],
+    os.environ['MSSQL_CATALOG'],
+    os.environ['MSSQL_USER'],
+    os.environ['MSSQL_PASS'])
+cstr = 'mssql+pyodbc:///?odbc_connect={}'.format(urllib.parse.quote_plus(conn_str_mssql))
+
 mssql_creator = ConnectionPoolWithoutTime(
         pyodbc,
         'DRIVER={{{}}};SERVER={};DATABASE={};UID={};PWD={{{}}}'.format(
@@ -132,20 +140,6 @@ def api_busy(*args, **kwargs):
     print('post busy')
     return 'busy: done\n'
 
-@app.route('/api/busy/oracle')
-def api_busy_oracle(*args, **kwargs):
-    print('pre busy oracle')
-    sess_oracle = db_sessionmaker_oracle()
-    recs = sess_oracle.execute("""
-        with x as (select rownum-1 r from dual connect by rownum <= 10)
-        select ones.r + 10*tens.r + 100*hundreds.r + 1000*thousands.r + 10000*tenthous.r + 100000*hunthous.r n
-        from x ones, x tens, x hundreds, x thousands, x tenthous, x hunthous
-        order by 1""")
-    #recs = sess_oracle.execute('select 1 as n from dual')
-    print(', '.join(str(x[0]) for x in recs.fetchall()[:10]))
-    print('post busy oracle')
-    return 'busy-oracle: done\n'
-
 def _fetchall_with_sleep(result_proxy):
     while True:
         recs = result_proxy.fetchmany(size=1000)
@@ -158,6 +152,28 @@ def fetchall_with_sleep(result_proxy):
     for x in concat(_fetchall_with_sleep(result_proxy)):
         yield x
         socketio.sleep(0)
+
+@app.route('/api/busy/oracle')
+def api_busy_oracle(*args, **kwargs):
+    sess_oracle = None
+    try:
+        print('pre busy oracle')
+        sess_oracle = db_sessionmaker_oracle()
+        recs = sess_oracle.execute("""
+            with x as (select rownum-1 r from dual connect by rownum <= 10)
+            select ones.r + 10*tens.r + 100*hundreds.r + 1000*thousands.r + 10000*tenthous.r + 100000*hunthous.r + 1000000*mil.r n
+            from x ones, x tens, x hundreds, x thousands, x tenthous, x hunthous, x mil
+            order by 1""")
+        #recs = sess_oracle.execute('select 1 as n from dual')
+        print(', '.join(str(x[0]) for x in itertools.islice(fetchall_with_sleep(recs), 10)))
+        print('post busy oracle')
+        return 'busy-oracle: done\n'
+    except sqlalchemy.exc.TimeoutError as ex:
+        print(ex)
+        return traceback.format_exc()
+    finally:
+        if sess_oracle:
+            sess_oracle.close()
 
 @app.route('/api/busy/mssql')
 def api_busy_mssql(*args, **kwargs):

@@ -7,6 +7,7 @@ export ORACLE_PASS="Oradoc_db1"
 export ORACLE_HOST='localhost'
 export ORACLE_PORT=1521
 export ORACLE_SERVICE_NAME='ORCLCDB.localdomain'
+export ORACLE_SID='ORCLPDB1.localdomain'
 
 export MSSQL_DRIVER="ODBC Driver 17 for SQL Server"
 export MSSQL_USER="SA"
