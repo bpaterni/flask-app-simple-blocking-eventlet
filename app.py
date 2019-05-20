@@ -12,6 +12,7 @@ import time
 import cx_Oracle
 import eventlet.db_pool
 import pyodbc
+import traceback
 
 import sqlalchemy
 from sqlalchemy import create_engine
@@ -160,18 +161,25 @@ def fetchall_with_sleep(result_proxy):
 
 @app.route('/api/busy/mssql')
 def api_busy_mssql(*args, **kwargs):
-    print('pre busy mssql')
-    sess_mssql = db_sessionmaker_mssql()
-    recs = sess_mssql.execute("""
-        WITH x AS (SELECT n FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) v(n))
-        SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthous.n + 100000*hunthous.n + 1000000*mil.n n
-        FROM x ones,     x tens,      x hundreds,       x thousands, x tenthous, x hunthous, x mil
-        ORDER BY 1""")
-    #recs = sess_mssql.execute('select 1 as n')
-    print(', '.join(str(x[0]) for x in itertools.islice(fetchall_with_sleep(recs), 10)))
-    print('post busy mssql')
-    sess_mssql.close()
-    return 'busy-mssql: done\n'
+    sess_mssql = None
+    try:
+        print('pre busy mssql')
+        sess_mssql = db_sessionmaker_mssql()
+        recs = sess_mssql.execute("""
+            WITH x AS (SELECT n FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) v(n))
+            SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthous.n + 100000*hunthous.n + 1000000*mil.n n
+            FROM x ones,     x tens,      x hundreds,       x thousands, x tenthous, x hunthous, x mil
+            ORDER BY 1""")
+        #recs = sess_mssql.execute('select 1 as n')
+        print(', '.join(str(x[0]) for x in itertools.islice(fetchall_with_sleep(recs), 10)))
+        print('post busy mssql')
+        return 'busy-mssql: done\n'
+    except sqlalchemy.exc.TimeoutError as ex:
+        print(ex)
+        return traceback.format_exc()
+    finally:
+        if sess_mssql:
+            sess_mssql.close()
 
 @app.route('/api/busy/postgresql')
 def api_busy_postgresql(*args, **kwargs):
