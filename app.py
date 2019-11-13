@@ -117,7 +117,12 @@ mssql_creator = ConnectionPoolWithoutTime(
             os.environ['MSSQL_USER'],
             os.environ['MSSQL_PASS'],
             ))
-db_engine_mssql  = create_engine(cstr, **{'creator': mssql_creator.create})
+
+if not os.environ.get('MSSQL_USE_CUSTOM_EVENTLET_POOL_CREATOR'):
+    db_engine_mssql  = create_engine(cstr)
+else:
+    print('Using custom eventlet eventlet pool creator')
+    db_engine_mssql  = create_engine(cstr, **{'creator': mssql_creator.create})
 db_engine_postgresql = create_engine('postgresql+psycopg2://{}:{}@{}:{}/{}'.format(
     urllib.parse.quote_plus(os.environ['PSQL_USER']),
     urllib.parse.quote_plus(os.environ['PSQL_PASS']),
