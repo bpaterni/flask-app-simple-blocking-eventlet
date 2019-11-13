@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker run --name postgres -P -e POSTGRES_PASSWORD=mysecretpass -d postgres
+docker run --name postgres -P -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpass -d postgres
 
 ## Connect with
 ## psql -h localhost -p 32768 -U postgres -W postgres
