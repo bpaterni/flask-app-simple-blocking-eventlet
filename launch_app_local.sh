@@ -14,7 +14,7 @@ export MSSQL_USER="SA"
 export MSSQL_PASS='Strong!Passw0rd'
 export MSSQL_HOST='127.0.0.1'
 export MSSQL_CATALOG='tempdb'
-export MSSQL_USE_CUSTOM_EVENTLET_POOL_CREATOR=y
+#export MSSQL_USE_CUSTOM_EVENTLET_POOL_CREATOR=y
 
 export PSQL_USER='postgres'
 export PSQL_PASS='mysecretpass'
