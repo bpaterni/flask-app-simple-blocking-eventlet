@@ -16,8 +16,8 @@ flask-wtf = "*"
 flask-socketio = "*"
 "psycopg2" = "*"
 eventlet = "*"
-sqlalchemy = "*"
 toolz = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 
