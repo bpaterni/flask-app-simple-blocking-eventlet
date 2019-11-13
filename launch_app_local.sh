@@ -16,7 +16,7 @@ export MSSQL_HOST='127.0.0.1'
 export MSSQL_CATALOG='tempdb'
 
 export PSQL_USER='postgres'
-export PSQL_PASS='mysecretpassword'
+export PSQL_PASS='mysecretpass'
 export PSQL_HOST='localhost'
 export PSQL_PORT=5432
 export PSQL_SCHEMA='postgres'
