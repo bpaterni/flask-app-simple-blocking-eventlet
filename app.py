@@ -228,12 +228,23 @@ def api_busy_mssql(*args, **kwargs):
 
 @app.route("/api/busy/postgresql")
 def api_busy_postgresql(*args, **kwargs):
-    print("pre busy postgresql")
-    sess_psql = db_sessionmaker_postgresql()
-    recs = sess_psql.execute("""SELECT * FROM generate_series(1,10000000)""")
-    print(", ".join(str(x[0]) for x in recs.fetchall()[:10]))
-    print("post busy postgresql")
-    return "busy-postgresql: done\n"
+    sess_psql = None
+    try:
+        print("pre busy postgresql")
+        sess_psql = db_sessionmaker_postgresql()
+        recs = sess_psql.execute("""SELECT * FROM generate_series(1,10000000)""")
+        #print(", ".join(str(x[0]) for x in recs.fetchall()[:10]))
+        print(", ".join(
+            str(x[0]) for x in itertools.islice(fetchall_with_sleep(recs), 10)
+        ))
+        print("post busy postgresql")
+        return "busy-postgresql: done\n"
+    except sqlalchemy.exc.TimeoutError as ex:
+        print(ex)
+        return traceback.format_exc()
+    finally:
+        if sess_psql:
+            sess_psql.close()
 
 
 if __name__ == "__main__":
