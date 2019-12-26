@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#export ASYNC_MODE_THREADING=y
 export ENABLE_MONKEY_PATCH_ALL=y
 
 export ORACLE_USER='sys'

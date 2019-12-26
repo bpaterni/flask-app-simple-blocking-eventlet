@@ -25,7 +25,10 @@ from flask_socketio import SocketIO
 from toolz.curried import concat
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+if not os.environ.get("ASYNC_MODE_THREADING"):
+    socketio = SocketIO(app)
+else:
+    socketio = SocketIO(app, async_mode="threading")
 
 if os.environ.get("ENABLE_DEBUG", None):
     import pdb
