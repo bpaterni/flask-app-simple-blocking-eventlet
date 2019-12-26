@@ -241,7 +241,8 @@ def api_busy_postgresql(*args, **kwargs):
         return "busy-postgresql: done\n"
     except sqlalchemy.exc.TimeoutError as ex:
         print(ex)
-        return traceback.format_exc()
+        #return traceback.format_exc()
+        return str(ex)
     finally:
         if sess_psql:
             sess_psql.close()
