@@ -27,6 +27,7 @@ from toolz.curried import concat
 app = Flask(__name__)
 if not os.environ.get("ASYNC_MODE_THREADING"):
     socketio = SocketIO(app)
+    print("Default")
 else:
     socketio = SocketIO(app, async_mode="threading")
 
@@ -121,8 +122,20 @@ mssql_creator = ConnectionPoolWithoutTime(
     ),
 )
 
+
 if not os.environ.get("MSSQL_USE_CUSTOM_EVENTLET_POOL_CREATOR"):
-    db_engine_mssql = create_engine(cstr)
+    db_engine_mssql = create_engine(
+        "mssql+pymssql://{}:{}@{}:{}/{}".format(
+             urllib.parse.quote_plus(os.environ["MSSQL_USER"]),
+             urllib.parse.quote_plus(os.environ["MSSQL_PASS"]),
+             urllib.parse.quote_plus(os.environ["MSSQL_HOST"]),
+             urllib.parse.quote_plus(os.environ["MSSQL_PORT"]),
+            urllib.parse.quote_plus(os.environ["MSSQL_CATALOG"]),
+        ),
+     pool_size=50, max_overflow=10
+    )
+    db_engine_mssql = create_engine(cstr, pool_size=50, max_overflow=10)
+    print(db_engine_mssql.pool.__dict__)
 else:
     print("Using custom eventlet eventlet pool creator")
     db_engine_mssql = create_engine(
@@ -209,8 +222,8 @@ def api_busy_mssql(*args, **kwargs):
         recs = sess_mssql.execute(
             """
             WITH x AS (SELECT n FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) v(n))
-            SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthous.n + 100000*hunthous.n + 1000000*mil.n n
-            FROM x ones,     x tens,      x hundreds,       x thousands, x tenthous, x hunthous, x mil
+            SELECT ones.n + 10*tens.n + 100*hundreds.n + 1000*thousands.n + 10000*tenthous.n +100000*hunthous.n n
+            FROM x ones,     x tens,      x hundreds,       x thousands, x tenthous, x hunthous
             ORDER BY 1"""
         )
         # recs = sess_mssql.execute('select 1 as n')
@@ -257,4 +270,5 @@ if __name__ == "__main__":
         run_kw["host"] = os.environ.get("FLASK_HOST")
     if os.environ.get("FLASK_PORT"):
         run_kw["port"] = os.environ.get("FLASK_PORT")
+    print(run_kw)
     socketio.run(app, **run_kw)

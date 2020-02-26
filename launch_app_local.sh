@@ -12,8 +12,9 @@ export ORACLE_SID='ORCLPDB1.localdomain'
 
 export MSSQL_DRIVER="ODBC Driver 17 for SQL Server"
 export MSSQL_USER="SA"
-export MSSQL_PASS='Strong!Passw0rd'
+export MSSQL_PASS='ebUU17Qm*3$p'
 export MSSQL_HOST='127.0.0.1'
+export MSSQL_PORT=1433
 export MSSQL_CATALOG='tempdb'
 #export MSSQL_USE_CUSTOM_EVENTLET_POOL_CREATOR=y
 
